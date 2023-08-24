@@ -5,7 +5,8 @@ import { createPinia } from 'pinia'
 import { componentPlugin } from "@/components"
 import { MotionPlugin } from "@vueuse/motion"
 
-import piniaPlguginPersistedstate from 'pinia-plugin-persistedstate'
+// import piniaPlguginPersistedstate from 'pinia-plugin-persistedstate'
+import piniaPersist from 'pinia-plugin-persist'
 
 import 'element-plus/theme-chalk/el-loading.css'
 import 'element-plus/theme-chalk/el-message.css'
@@ -20,8 +21,8 @@ app.use(componentPlugin)
 app.use(MotionPlugin)
 
 const pinia = createPinia()
-pinia.use(piniaPlguginPersistedstate)
+// pinia.use(piniaPlguginPersistedstate)
+pinia.use(piniaPersist)
 app.use(pinia)
-
 
 app.mount('#app')

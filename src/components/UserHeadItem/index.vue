@@ -11,7 +11,7 @@ defineProps({
 
 <template>
   <div class="head-pic">
-    <img :src="imgUrl" alt="" />
+    <img :src="imgUrl" alt="" draggable="false"/>
   </div>
 </template>
 
@@ -26,6 +26,9 @@ defineProps({
   display: flex;
   justify-content: center;
   align-items: center;
+
+  user-select: none;
+  -webkit-user-drag:none;
 
   &::before {
     content: '';
@@ -45,6 +48,7 @@ defineProps({
     height: 45px;
     border-radius: 50%;
     box-sizing: border-box;
+
   }
 }
 

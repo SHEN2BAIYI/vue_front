@@ -1,27 +1,31 @@
 <script setup>
-import { ref } from 'vue'
-import { useMotionProperties, useMotionTransitions, useElementTransform } from '@vueuse/motion'
+import { ref, watch } from 'vue'
+import { useMotionProperties, useMotionTransitions} from '@vueuse/motion'
 import NavCom from './components/ChatNav.vue'
+import { useRoute } from "vue-router"
+import { useUserStore } from "@/stores/userStore"
+
+const userStore = useUserStore()
 
 const logo = ref(null)
-// const {motionProperties} = useMotionProperties(logo)
-// const { push, stop } = useMotionTransitions()
-//
-// const test = () => {
-//   motionProperties.left = 0
-//   console.log(motionProperties.top)
-//   push('x', 500, motionProperties, {type: 'spring', duration: 4000})
-//
-// }
 
-// const { transform, stop } = useElementTransform(logo)
+const { motionProperties } = useMotionProperties(logo)
+const { push } = useMotionTransitions()
+
+const route = useRoute()
+watch(route, () => {
+  if (route.path === '/login') {
+    motionProperties.top = logo.value.offsetTop
+    push('top', logo.value.offsetTop / 2, motionProperties, {type:'spring', duration:2000})
+  }
+})
+
 
 
 </script>
 
 
 <template>
-  <el-button @click="test"> 111 </el-button>
   <div id="chat-panel">
     <!-- 整体布局 -->
     <el-container class="chat-panel">
@@ -32,13 +36,12 @@ const logo = ref(null)
 
       <!--  主体部分  -->
       <el-main>
-        <div class="hold" ref="logo">
+        <div class="hold" ref="logo" v-show="!userStore.userInfo.uuid">
           <img src="/src/assets/images/snapchat.png" alt=""/>
         </div>
         <RouterView />
       </el-main>
     </el-container>
-
   </div>
 </template>
 
@@ -77,7 +80,7 @@ const logo = ref(null)
     position: absolute;
     left: 50%;
     top: 50%;
-
+    transform: translate(-50%, -50%);
 
 
     .el-main {
@@ -85,10 +88,15 @@ const logo = ref(null)
 
       .hold {
         position: absolute;
+        left: 47%;
         top: 50%;
-        left: 50%;
         transform: translate(-50%, -50%) !important;
         z-index: 0;
+
+        img {
+          -webkit-user-drag:none;
+          user-select: none;
+        }
       }
     }
   }

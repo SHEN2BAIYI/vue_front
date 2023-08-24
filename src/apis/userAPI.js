@@ -1,29 +1,26 @@
 // 封装所有和用户请求相关的接口函数
-import httpInstance from "@/utils/http"
+import axios from "axios"
 
+export const getUserInfoAPI = async ({ account, password}) => {
+    return await axios.post('/api/userinfo/', {
+        account: account,
+        password: password,
+    })
+}
 
-export const getAuthInfoAPI = ({account, password}) => {
-    return httpInstance({
-        url: '/api/token/',
-        method: 'POST',
-        data: {
-            'username': account,
-            'password' :password
+export const getFriendListAPI = async () => {
+    return await axios.get(
+        '/api/friend/'
+    )
+}
+
+export const getFriendChatAPI = async (id) => {
+    return await axios.get(
+        '/api/chat/',{
+            params: {
+                id: id
+            }
         }
-    })
+    )
 }
 
-export const getUserInfoAPI = ( token ) => {
-    console.log(token)
-    return httpInstance({
-        url: '/api/info/',
-        method: 'GET',
-    })
-}
-
-export const testAPI = () => {
-    return httpInstance({
-        url: 'api/test/',
-        method: 'GET',
-    })
-}

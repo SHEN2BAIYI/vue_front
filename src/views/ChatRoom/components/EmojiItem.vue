@@ -30,8 +30,6 @@ const emojiList = [
       "/src/assets/images/emoji/tired-face.png",
       "/src/assets/images/emoji/tired-face.png",
       "/src/assets/images/emoji/tired-face.png",
-
-
   ]
 
 const emit = defineEmits(['click-emoji'])

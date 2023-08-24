@@ -1,61 +1,130 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onUpdated, onMounted, toRefs } from 'vue'
+import { useUserStore } from "@/stores/userStore"
+import { useScroll, onClickOutside } from '@vueuse/core'
+import EmojiCom from './EmojiItem.vue'
 import PersonCard from './PersonCard.vue'
 
-defineProps({
+const props = defineProps({
   personInfo: {
     type: Object,
     default: () => {
-
     }
   }
 })
 
+// 输入栏输入
 const input = ref('')
 
-// 自己设定假消息
-let msg = [
-  {
-    time:'09:12 AM',
-    msg:'',
-    is_self: false,
-    img_url: "/src/assets/images/emoji/slightly-smiling-face.png",
-  },
-  {
-    time:'09:12 AM',
-    msg:'我所的房间里萨的房间里的萨迦法了第三节立法科技萨的佛教？啊第三反恐惊魂卡第三弗兰克和科技啊第三法律和科技科技萨菲' +
-        '的萨菲的萨房间里卡的司法廉洁卡斯的法律isyo whossdfhdsakjhfkjsadhfskjashdfksahdkfhak' +
-        'kdashfkdsahfkahdsfkahdskfjahdskf',
-    is_self: true,
-    img_url: "",
-  },
-  {
-    time:'09:12 AM',
-    msg:'',
-    is_self: true,
-    img_url: "/src/assets/images/emoji/slightly-smiling-face.png",
-  },
-  {
-    time:'09:12 AM',
-    msg:'在吗?',
-    is_self: false,
-    img_url: "",
-  },
-  {
-    time:'09:12 AM',
-    msg:'',
-    is_self: true,
-    img_url: "/src/assets/images/emoji/slightly-smiling-face.png",
-  },
-  {
-    time:'09:12 AM',
-    msg:'',
-    is_self: false,
-    img_url: "/src/assets/images/emoji/slightly-smiling-face.png",
-  },
+// 获得当前用户数据
+const userStore = useUserStore()
 
-]
+/* 聊天窗口初始向下滚动问题 */
+const chatWindow = ref(null)
+const { y } = useScroll(chatWindow, { behavior: 'smooth'})
 
+const scrollDown = () => {
+  y.value = chatWindow.value.scrollHeight - chatWindow.value.offsetHeight + 100
+}
+
+/* 显示与否相关事项 */
+const emojiBox = ref(null)
+const emojiBoxShow = ref(false)
+const emojiClick = () => {
+  emojiBoxShow.value = !emojiBoxShow.value
+}
+
+onClickOutside(emojiBox, () => {
+  emojiBoxShow.value = false
+})
+
+/* 发送消息相关事项 */
+// 消息打包
+const { personInfo } = toRefs(props)
+const wrapMsg = ( msg, img_url='', file_url='', file_type='') => {
+  let myMsg = {}
+  let now = new Date()
+  let hour = now.getHours()
+  let minute = now.getMinutes()
+  myMsg.msg = msg
+  myMsg.time = `${hour}:${minute}`
+  myMsg.img_url = img_url
+  myMsg.file_url = file_url
+  myMsg.file_type = file_type
+  myMsg.is_self = true
+  return myMsg
+}
+
+// 发送 emoji
+const emojiSend = (item) => {
+  const msg = wrapMsg('', item)
+  personInfo.value.history.push(msg)
+}
+// 发送文字
+const msgSend = () => {
+  if (input.value) {
+    const msg = wrapMsg(input.value)
+    personInfo.value.history.push(msg)
+  }
+  input.value = ''
+}
+// 发送图片
+const imgSend = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+
+    reader.onload = (e) => {
+      emojiSend(e.target.result)
+    }
+  }
+}
+// 发送文件
+let fileType = ''
+const fileLogo = {
+  'text/css': 'txt.png',
+  'text/plain': 'txt.png',
+  'application/pdf': 'pdf.png'
+}
+const fileSend = (event) => {
+  const file = event.target.files[0]
+
+  if (file) {
+    if (file.type in fileLogo) {
+      fileType = fileLogo[file.type]
+    } else {
+      fileType = 'unknownfile.png'
+    }
+
+    // 获取文件路径
+    const url = window.URL.createObjectURL(file)
+
+    // 在聊天界面中显示
+    const msg = wrapMsg('', '', url, fileType)
+    personInfo.value.history.push(msg)
+  }
+
+  // let formData = new FormData()
+  // formData.append('test', '1111')
+  // formData.append('file', file)
+  //
+  // console.log(formData.get('file'))
+}
+
+// 文件预览
+const openFile = (url) => {
+  window.open(url, '_blank', 'fullscreen=1')
+}
+
+
+onUpdated(() => {
+  scrollDown()
+})
+
+onMounted(() => {
+  scrollDown()
+})
 </script>
 
 
@@ -79,8 +148,13 @@ let msg = [
           <i class="iconfont icon-tupian"></i>
         </label>
 
-        <input type="file" name="" id="imgFile" accept="image.*"/>
-        <input type="file" name="" id="docFile" accept="application/*, text/*">
+        <input type="file" id="imgFile"
+               accept="image/*"
+               @change="imgSend"/>
+
+        <input type="file" id="docFile"
+               accept="application/*, text/*"
+               @change="fileSend">
       </div>
 
     </div>
@@ -88,21 +162,27 @@ let msg = [
     <!--  聊天窗口主体  -->
     <div class="window-main">
       <!--  聊天内容  -->
-      <div class="content-wrapper">
-        <div class="msg-wrapper" v-for="(item, index) in msg" :key="index" :class="item.is_self? 'is-self':''">
+      <div class="content-wrapper" ref="chatWindow">
+        <div class="msg-wrapper" v-for="(item, index) in personInfo.history" :key="index" :class="item.is_self? 'is-self':''">
         <!--  根据不同消息渲染不同元素  -->
           <div class="text-wrapper" v-if="item.msg">
             <span> {{ item.msg }}</span>
           </div>
 
-          <div v-if="item.img_url" class="img-wrapper">
-            <img :src="item.img_url" alt=""/>
+          <div v-if="item.img_url || item.file_url"
+               class="img-wrapper"
+               :class="item.file_url? 'file-wrapper':''">
+            <img v-if="item.img_url" :src="item.img_url" alt=""/>
+            <img v-if="item.file_url"
+                 :src="`/src/assets/images/fileImg/${item.file_type}`"
+                 @click="openFile(item.file_url)"
+                 alt=""/>
           </div>
 
-          <div class="msg-detail" >
-            <img :src="personInfo.headImg" alt=""/>
-            <span>{{ personInfo.name }}</span>
-            <span>{{ personInfo.detail }}</span>
+          <div class="msg-detail" v-if="item.is_self? person=userStore.userInfo:person=personInfo">
+            <img :src="person.headImg" alt=""/>
+            <span>{{ person.name }}</span>
+            <span>{{ person.detail }}</span>
           </div>
 
         </div>
@@ -110,17 +190,20 @@ let msg = [
 
       <!--  聊天内容发送  -->
       <div class="content-input">
-        <div class="content-emoji cube">
+        <div class="content-emoji cube" @click="emojiClick" ref="emojiBox">
           <img src="src/assets/images/emoji/smiling-face.png" alt=""/>
+          <!-- Emoji 选择框 -->
+          <EmojiCom v-if="emojiBoxShow" @click-emoji="emojiSend"/>
         </div>
 
-        <div class="content-inputbox">
+        <div class="content-inputbox" @keyup.enter="msgSend">
           <el-input v-model="input" placeholder="Please input"/>
         </div>
 
-        <div class="content-send cube">
+        <div class="content-send cube" @click="msgSend">
           <img src="src/assets/images/emoji/rocket.png" alt=""/>
         </div>
+
       </div>
     </div>
 
@@ -132,6 +215,9 @@ let msg = [
 .chat-window {
   height: 100%;
   overflow: hidden;
+
+  user-select: none;
+  -webkit-user-drag:none;
 
   .window-top {
     display: flex;
@@ -184,7 +270,7 @@ let msg = [
       }
 
       .msg-wrapper {
-        margin-top: 30px;
+        margin-bottom: 30px;
         .text-wrapper {
           display: flex;
           span {
@@ -203,7 +289,13 @@ let msg = [
         .img-wrapper {
           display: flex;
           img {
-            width: 100px;
+            height: 150px;
+          }
+        }
+
+        .file-wrapper {
+          cursor: pointer;
+          img {
             height: 100px;
           }
         }
@@ -237,7 +329,7 @@ let msg = [
       padding: 0 50px;
 
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
 
       img {
@@ -342,6 +434,10 @@ let msg = [
       margin: 0 0 0 10px;
     }
   }
+}
+
+img {
+  -webkit-user-drag:none;
 }
 
 

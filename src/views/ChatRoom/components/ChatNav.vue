@@ -1,9 +1,15 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from "element-plus"
+import { useUserStore } from "@/stores/userStore"
 import router from '@/router'
+import { useRoute } from 'vue-router'
 
+// Nav 的 icon 样式
 const menuList = ['icon-xinxi', 'icon-shipin', 'icon-telephone', 'icon-shandian', 'icon-shezhi']
+
+// 获取当前用户信息
+const userStore = useUserStore()
 
 // 响应 Nav 点击事件，选择激活 Nav
 const activeIndex = ref(-1)
@@ -21,8 +27,23 @@ const chooseNav = (index) => {
       ElMessage({type: 'error', message: '该功能还没有开发'});
       break;
   }
-
 }
+
+// 点击头像的响应事件
+const activeUser = () => {
+  router.push({
+    name: 'ChatHome'
+  })
+}
+
+// 当直接从链接进来，nav 不会被激活，用 watch 简单一点
+const route = useRoute()
+watch(route, ()=>{
+  if (route.path === '/ChatHome') {
+    activeIndex.value = 0
+  }
+})
+
 
 </script>
 
@@ -41,8 +62,8 @@ const chooseNav = (index) => {
     </div>
 
     <!--  用户头像  -->
-    <div class="user-head">
-      <UserHead imgUrl="/src/assets/images/head_portrait.jpg"/>
+    <div class="user-head" @click="activeUser">
+      <UserHead :imgUrl="userStore.userInfo.headImg"/>
     </div>
   </div>
 </template>
