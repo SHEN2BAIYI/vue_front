@@ -47,13 +47,16 @@ const doLogin = () => {
       // 登录，获得用户信息
       await userStore.getUserInfo({ account, password})
 
-      // 1.提示用户
-      ElMessage({type: 'success', message: '登录成功'})
-
-      // 2.跳转聊天室
-      await router.push({
-        name: 'ChatHome'
-      })
+      if (userStore.userInfo) {
+        // 1.提示用户
+        ElMessage({type: 'success', message: '登录成功'})
+        // 2.跳转聊天室
+        await router.push({
+          name: 'ChatHome'
+        })
+      } else {
+        ElMessage({ type: 'error', message: '账户或密码错误'})
+      }
     }
   })
 }
